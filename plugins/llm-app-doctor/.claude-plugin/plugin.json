@@ -1,0 +1,22 @@
+{
+  "name": "llm-app-doctor",
+  "displayName": "LLM App Doctor",
+  "version": "1.0.0",
+  "description": "Statically audits AI/LLM integration code for leaked API keys, prompt-injection sinks, retired/deprecated model IDs, parameters that now error on current models, missing generation limits, and prompt-cache busters.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "llm",
+    "ai",
+    "anthropic",
+    "claude",
+    "openai",
+    "prompt-injection",
+    "security",
+    "code-review",
+    "model-migration"
+  ]
+}

@@ -11,6 +11,13 @@
       "description": "Static safety analyzer for database schema migrations: flags table-locking, table-rewriting, and data-loss operations (Postgres SQL + Rails/Django/Alembic) and suggests online-safe rewrites.",
       "version": "1.0.0",
       "keywords": ["database", "migration", "postgres", "zero-downtime", "ddl"]
+    },
+    {
+      "name": "llm-app-doctor",
+      "source": "./plugins/llm-app-doctor",
+      "description": "Static auditor for AI/LLM integration code: flags leaked API keys, prompt-injection sinks, retired/deprecated model IDs, parameters that now 400 on current models, missing generation limits, and prompt-cache busters (Anthropic + OpenAI, Python + JS/TS).",
+      "version": "1.0.0",
+      "keywords": ["llm", "ai", "anthropic", "prompt-injection", "security"]
     }
   ]
 }
