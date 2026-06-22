@@ -1,0 +1,23 @@
+{
+  "name": "migration-guard",
+  "displayName": "Migration Guard",
+  "version": "1.0.0",
+  "description": "Statically analyzes database schema migrations for operations that cause production downtime, table locks, full-table rewrites, or data loss — and proposes online-safe rewrites.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "database",
+    "migration",
+    "postgres",
+    "schema",
+    "ddl",
+    "locks",
+    "zero-downtime",
+    "rails",
+    "django",
+    "alembic"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "claude-skills",
+  "owner": {
+    "name": "Abhishek Mittal",
+    "url": "https://github.com/aabhimittal/claude-skills"
+  },
+  "plugins": [
+    {
+      "name": "migration-guard",
+      "source": "./plugins/migration-guard",
+      "description": "Static safety analyzer for database schema migrations: flags table-locking, table-rewriting, and data-loss operations (Postgres SQL + Rails/Django/Alembic) and suggests online-safe rewrites.",
+      "version": "1.0.0",
+      "keywords": ["database", "migration", "postgres", "zero-downtime", "ddl"]
+    }
+  ]
+}
