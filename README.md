@@ -7,6 +7,9 @@ focused, **dependency-free** developer skills. Each ships a deterministic Python
 analyzer (or driver) with a self-test and a CI-friendly exit code, so the
 guidance is enforced by code, not vibes.
 
+📖 **[docs/USAGE.md](docs/USAGE.md)** — see each skill in action with real,
+captured terminal output on the bundled examples (what you get after installing).
+
 ## Plugins
 
 | Plugin | What it does |
