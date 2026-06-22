@@ -1,0 +1,29 @@
+# The same app, hardened and slimmed. analyze_dockerfile.py reports no findings.
+
+FROM node:20-slim
+
+WORKDIR /app
+
+# Copy only the manifest first so the dependency layer caches independently
+# of source changes.
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# System deps with recommends disabled and the apt lists cleaned in the SAME
+# layer so they don't bloat the image.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Now copy the rest of the source.
+COPY . .
+
+# Run as a non-root user.
+RUN useradd --create-home app
+USER app
+
+# Secrets (NPM_TOKEN etc.) are provided at build time via BuildKit secret
+# mounts or at runtime via the orchestrator — never ENV/ARG.
+CMD ["node", "server.js"]

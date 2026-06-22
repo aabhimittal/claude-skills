@@ -1,0 +1,21 @@
+{
+  "name": "dockerfile-doctor",
+  "displayName": "Dockerfile Doctor",
+  "version": "1.0.0",
+  "description": "Statically lints Dockerfiles for security issues (root user, :latest tags, secrets in ENV/ARG, ADD misuse, curl|sh) and image-bloat / cache problems (apt and pip caches, dependency-install ordering), with concrete fixes.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "docker",
+    "dockerfile",
+    "container",
+    "security",
+    "image-size",
+    "devops",
+    "hardening",
+    "ci"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "regression-finder",
+  "displayName": "Regression Finder",
+  "version": "1.0.0",
+  "description": "Drives an automated, safe `git bisect run` from a known-good ref and a repro command to pinpoint the exact commit that introduced a regression, then reports the culprit and its diff. Verifies the good/bad boundary and always restores your branch.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "git",
+    "bisect",
+    "regression",
+    "debugging",
+    "ci",
+    "testing",
+    "root-cause"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "env-doctor",
+  "displayName": "Env Doctor",
+  "version": "1.0.0",
+  "description": "Reconciles a project's real .env files, the env vars the code actually reads, and the .env.example — flagging un-ignored .env files, missing/undocumented/dead variables, placeholder values, and secrets committed to the example.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "dotenv",
+    "env",
+    "environment-variables",
+    "secrets",
+    "configuration",
+    "onboarding",
+    "security",
+    "ci"
+  ]
+}
