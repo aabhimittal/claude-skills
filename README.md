@@ -1,5 +1,7 @@
 # claude-skills
 
+[![CI](https://github.com/aabhimittal/claude-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/aabhimittal/claude-skills/actions/workflows/ci.yml)
+
 An open-source [Claude Code](https://code.claude.com) plugin marketplace — five
 focused, **dependency-free** developer skills. Each ships a deterministic Python
 analyzer (or driver) with a self-test and a CI-friendly exit code, so the
