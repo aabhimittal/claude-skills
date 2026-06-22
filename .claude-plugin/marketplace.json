@@ -18,6 +18,27 @@
       "description": "Static auditor for AI/LLM integration code: flags leaked API keys, prompt-injection sinks, retired/deprecated model IDs, parameters that now 400 on current models, missing generation limits, and prompt-cache busters (Anthropic + OpenAI, Python + JS/TS).",
       "version": "1.0.0",
       "keywords": ["llm", "ai", "anthropic", "prompt-injection", "security"]
+    },
+    {
+      "name": "dockerfile-doctor",
+      "source": "./plugins/dockerfile-doctor",
+      "description": "Static linter for Dockerfile security (root user, :latest tags, secrets in ENV/ARG, ADD misuse, curl|sh) and image bloat / cache problems (apt and pip caches, dependency-install ordering), with concrete fixes.",
+      "version": "1.0.0",
+      "keywords": ["docker", "dockerfile", "container", "security", "image-size"]
+    },
+    {
+      "name": "env-doctor",
+      "source": "./plugins/env-doctor",
+      "description": "Reconciles a project's real .env files, the env vars the code actually reads, and the .env.example — flagging un-ignored .env files, missing/undocumented/dead variables, placeholder values, and secrets committed to the example.",
+      "version": "1.0.0",
+      "keywords": ["dotenv", "env", "secrets", "configuration", "onboarding"]
+    },
+    {
+      "name": "regression-finder",
+      "source": "./plugins/regression-finder",
+      "description": "Drives an automated, safe `git bisect run` from a known-good ref and a repro command to pinpoint the commit that introduced a regression, then reports the culprit and its diff.",
+      "version": "1.0.0",
+      "keywords": ["git", "bisect", "regression", "debugging", "root-cause"]
     }
   ]
 }

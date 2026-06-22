@@ -1,0 +1,24 @@
+# Example Dockerfile with security and bloat problems.
+# Run: analyze_dockerfile.py Dockerfile.unsafe
+
+FROM node:latest
+
+# DKR003: secret baked into an ENV layer (recoverable via docker history)
+ENV NPM_TOKEN=npm_realtokenvalue1234567890
+
+WORKDIR /app
+
+# DKR008: copying all source before installing deps busts the cache layer
+COPY . .
+
+# DKR006/DKR007: apt cache left in the layer; pip cache not disabled
+RUN apt-get update && apt-get install -y python3 \
+    && pip3 install -r requirements.txt
+
+# DKR010: piping a remote script straight into a shell
+RUN curl -fsSL https://example.com/install.sh | sh
+
+RUN npm install
+
+# DKR001: no USER — the container runs as root
+CMD ["node", "server.js"]
