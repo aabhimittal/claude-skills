@@ -1,0 +1,22 @@
+# The same intent, hardened. analyze_workflow.py reports no findings.
+name: CI
+on: pull_request                 # untrusted code runs without secrets/write token
+
+permissions:
+  contents: read                 # least privilege
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: some-org/deploy-action@1f2e3d4c5b6a7980a1b2c3d4e5f60718293a4b5c  # v2.3.1
+      # Untrusted input bound to env and quoted — can't break out of the string
+      - name: Log
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: echo "Building PR: \"$PR_TITLE\""
+      - name: Publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: publish --token "$NPM_TOKEN"

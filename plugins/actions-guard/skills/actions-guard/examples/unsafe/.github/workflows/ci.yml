@@ -1,0 +1,19 @@
+# Example workflow with multiple security problems.
+name: CI
+on: pull_request_target          # GHA002: privileged trigger...
+
+jobs:                            # GHA004: no permissions: block -> broad token
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # GHA002 (cont.): checks out untrusted PR head under pull_request_target
+      - uses: actions/checkout@v4          # GHA001: mutable tag, not a SHA
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: some-org/deploy-action@main  # GHA001: branch ref (high)
+      # GHA003: attacker-controlled PR title interpolated into the shell
+      - run: echo "Building PR: ${{ github.event.pull_request.title }}"
+      # GHA007 + GHA005: remote script piped to sh, secret in run
+      - run: |
+          curl -sSL https://example.com/install.sh | sh
+          publish --token ${{ secrets.NPM_TOKEN }}

@@ -146,6 +146,34 @@ def main() -> int:
         extra="Note `PORT` is read by the code but **not** flagged — it's a "
               "well-known runtime variable, not something `.env` must provide."))
 
+    parts.append("## 🔐 actions-guard\n\n")
+    ag = skill("actions-guard") / "scripts" / "analyze_workflow.py"
+    ag_ex = skill("actions-guard") / "examples"
+    rc, out = run([PY, str(ag), "unsafe"], ag_ex)
+    parts.append(section(
+        "Harden a GitHub Actions workflow",
+        "Is my CI workflow secure? Check for pwn requests and script injection.",
+        "analyze_workflow.py unsafe   # a repo root; finds .github/workflows/*.yml",
+        rc, out))
+    rc, out = run([PY, str(ag), "safe"], ag_ex)
+    parts.append("### The hardened workflow passes\n\n"
+                 f"```console\n{out}\n```\n\n_Exit code: **{rc}**_\n\n---\n\n")
+
+    parts.append("## 🔁 api-contract-guard\n\n")
+    acg = skill("api-contract-guard") / "scripts" / "analyze_contract.py"
+    acg_ex = skill("api-contract-guard") / "examples"
+    rc, out = run([PY, str(acg), "schema.old.graphql", "schema.new.graphql"], acg_ex)
+    parts.append(section(
+        "Catch a breaking API change (GraphQL)",
+        "Did I break the API? Diff the old and new schema.",
+        "analyze_contract.py schema.old.graphql schema.new.graphql",
+        rc, out,
+        extra="It auto-detects the format — pass two OpenAPI/Swagger JSON files "
+              "and it diffs paths, operations, and required parameters instead."))
+    rc, out = run([PY, str(acg), "openapi.old.json", "openapi.new.json"], acg_ex)
+    parts.append("### The same tool on OpenAPI / Swagger (JSON)\n\n"
+                 f"```console\n{out}\n```\n\n_Exit code: **{rc}**_\n\n---\n\n")
+
     # regression-finder live demo (normalized shas)
     parts.append("## 🔍 regression-finder\n\n")
     reg = skill("regression-finder") / "scripts" / "regression_finder.py"
@@ -181,6 +209,17 @@ def main() -> int:
         "analyze_dockerfile.py Dockerfile --fail-on high\n"
         "    python3 plugins/env-doctor/skills/env-doctor/scripts/"
         "analyze_env.py . --fail-on high\n"
+        "    python3 plugins/actions-guard/skills/actions-guard/scripts/"
+        "analyze_workflow.py . --fail-on high\n"
+        "```\n\n"
+        "`api-contract-guard` takes the *old* and *new* schema as two arguments, "
+        "so in CI diff the base branch against the PR:\n\n"
+        "```yaml\n"
+        "- name: Breaking API change check\n"
+        "  run: |\n"
+        "    git show origin/main:openapi.json > /tmp/old.json\n"
+        "    python3 plugins/api-contract-guard/skills/api-contract-guard/scripts/"
+        "analyze_contract.py /tmp/old.json openapi.json --fail-on high\n"
         "```\n\n"
         "This repo's own CI (`.github/workflows/ci.yml`) runs the full harness "
         "`tests/run_all.py` across Python 3.9–3.12 on every push.\n\n"

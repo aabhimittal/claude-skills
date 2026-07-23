@@ -1,0 +1,22 @@
+{
+  "name": "api-contract-guard",
+  "displayName": "API Contract Guard",
+  "version": "1.0.0",
+  "description": "Detects breaking API changes by diffing two schema versions (OpenAPI/Swagger JSON + GraphQL SDL): removed endpoints/types/fields, newly-required parameters/arguments, type changes, and removed enum values — while noting additive changes as non-breaking.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "api",
+    "openapi",
+    "swagger",
+    "graphql",
+    "breaking-changes",
+    "contract",
+    "schema-diff",
+    "backward-compatibility",
+    "ci"
+  ]
+}

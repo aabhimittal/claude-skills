@@ -39,6 +39,20 @@
       "description": "Drives an automated, safe `git bisect run` from a known-good ref and a repro command to pinpoint the commit that introduced a regression, then reports the culprit and its diff.",
       "version": "1.0.0",
       "keywords": ["git", "bisect", "regression", "debugging", "root-cause"]
+    },
+    {
+      "name": "actions-guard",
+      "source": "./plugins/actions-guard",
+      "description": "Security linter for GitHub Actions workflows: unpinned third-party actions, pull_request_target pwn requests, ${{ github.event.* }} script injection in run:, missing least-privilege permissions, secret interpolation, and hard-coded credentials.",
+      "version": "1.0.0",
+      "keywords": ["github-actions", "ci", "security", "supply-chain", "script-injection"]
+    },
+    {
+      "name": "api-contract-guard",
+      "source": "./plugins/api-contract-guard",
+      "description": "Detects breaking API changes by diffing two schema versions (OpenAPI/Swagger JSON + GraphQL SDL): removed endpoints/types/fields, newly-required inputs, type changes, and removed enum values.",
+      "version": "1.0.0",
+      "keywords": ["api", "openapi", "graphql", "breaking-changes", "schema-diff"]
     }
   ]
 }

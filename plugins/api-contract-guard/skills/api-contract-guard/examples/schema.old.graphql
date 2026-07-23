@@ -1,0 +1,17 @@
+type Query {
+  user(id: ID!): User
+  posts(first: Int): [Post!]!
+}
+
+type User {
+  id: ID!
+  name: String
+  email: String
+  age: Int
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  GUEST
+}
