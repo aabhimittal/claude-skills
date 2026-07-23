@@ -1,0 +1,23 @@
+type Query {
+  # 'id' required arg unchanged, but a new required 'region' arg is breaking
+  user(id: ID!, region: String!): User
+  # 'posts' field removed entirely (breaking)
+}
+
+type User {
+  id: ID!
+  name: Int          # type changed String -> Int (breaking)
+  email: String
+  # 'age' removed (breaking)
+  phone: String      # new optional field (additive)
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  # GUEST removed (breaking)
+}
+
+type Team {          # new type (additive)
+  id: ID!
+}

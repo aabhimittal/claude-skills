@@ -108,6 +108,8 @@ ANALYZERS = {
     "dockerfile-doctor": skill("dockerfile-doctor") / "scripts" / "analyze_dockerfile.py",
     "env-doctor": skill("env-doctor") / "scripts" / "analyze_env.py",
     "regression-finder": skill("regression-finder") / "scripts" / "regression_finder.py",
+    "actions-guard": skill("actions-guard") / "scripts" / "analyze_workflow.py",
+    "api-contract-guard": skill("api-contract-guard") / "scripts" / "analyze_contract.py",
 }
 
 
@@ -171,6 +173,30 @@ def test_fixtures() -> None:
     check(rc == 1, "env-doctor: sample project exits 1")
     check({"ENV001", "ENV002", "ENV004", "ENV005", "ENV006"} <= _rules(data),
           f"env-doctor: sample rules complete ({sorted(_rules(data))})")
+
+    # actions-guard
+    ag = ANALYZERS["actions-guard"]
+    ex = skill("actions-guard") / "examples"
+    rc, data = run_json(ag, str(ex / "unsafe"))
+    check(rc == 1, "actions-guard: unsafe workflow exits 1")
+    check({"GHA001", "GHA002", "GHA003"} <= _rules(data),
+          f"actions-guard: unsafe rules include GHA001,002,003 ({sorted(_rules(data))})")
+    rc, _ = run(ag, str(ex / "safe"))
+    check(rc == 0, "actions-guard: safe workflow exits 0")
+
+    # api-contract-guard (GraphQL + OpenAPI, breaking vs identical)
+    acg = ANALYZERS["api-contract-guard"]
+    ex = skill("api-contract-guard") / "examples"
+    rc, data = run_json(acg, str(ex / "schema.old.graphql"), str(ex / "schema.new.graphql"))
+    check(rc == 1, "api-contract-guard: GraphQL breaking change exits 1")
+    check({"GQL003", "GQL004", "GQL005", "GQL006"} <= _rules(data),
+          f"api-contract-guard: GraphQL rules complete ({sorted(_rules(data))})")
+    rc, data = run_json(acg, str(ex / "openapi.old.json"), str(ex / "openapi.new.json"))
+    check(rc == 1, "api-contract-guard: OpenAPI breaking change exits 1")
+    check({"OAS001", "OAS003", "OAS004"} <= _rules(data),
+          f"api-contract-guard: OpenAPI rules include OAS001,003,004 ({sorted(_rules(data))})")
+    rc, _ = run(acg, str(ex / "schema.old.graphql"), str(ex / "schema.old.graphql"))
+    check(rc == 0, "api-contract-guard: identical schema exits 0")
 
 
 # --------------------------------------------------------------------------- #

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/aabhimittal/claude-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/aabhimittal/claude-skills/actions/workflows/ci.yml)
 
-An open-source [Claude Code](https://code.claude.com) plugin marketplace — five
+An open-source [Claude Code](https://code.claude.com) plugin marketplace — seven
 focused, **dependency-free** developer skills. Each ships a deterministic Python
 analyzer (or driver) with a self-test and a CI-friendly exit code, so the
 guidance is enforced by code, not vibes.
@@ -19,6 +19,8 @@ captured terminal output on the bundled examples (what you get after installing)
 | 🐳 **dockerfile-doctor** | Lints Dockerfiles for security (root, `:latest`, baked secrets, `curl\|sh`) and image bloat / cache problems. |
 | 🔑 **env-doctor** | Reconciles `.env` ↔ code usage ↔ `.env.example`: un-ignored `.env`, missing/dead vars, placeholders, leaked secrets. |
 | 🔍 **regression-finder** | Drives a safe automated `git bisect run` to pinpoint the commit that introduced a regression. |
+| 🔐 **actions-guard** | Security-lints GitHub Actions workflows: unpinned actions, `pull_request_target` pwn requests, `run:` script injection, over-broad tokens. |
+| 🔁 **api-contract-guard** | Diffs two API schema versions (OpenAPI JSON + GraphQL SDL) and flags breaking changes for clients. |
 
 ---
 
@@ -69,6 +71,26 @@ guard, a `--verify` boundary check, and guaranteed branch restoration. Prints th
 culprit commit and its diff.
 [Recipes](plugins/regression-finder/skills/regression-finder/references/recipes.md)
 
+### 🔐 actions-guard
+
+**Stop attackers from owning your CI.** Security-lints GitHub Actions workflows
+for the supply-chain and injection mistakes that leak secrets or run attacker
+code: third-party actions pinned to a mutable tag instead of a commit SHA,
+`pull_request_target` workflows that check out untrusted PR code with secrets
+("pwn requests"), `${{ github.event.* }}` interpolated straight into a `run:`
+shell (script injection), over-broad `GITHUB_TOKEN` permissions, and hard-coded
+credentials. No PyYAML needed.
+[Rules](plugins/actions-guard/skills/actions-guard/references/rules.md)
+
+### 🔁 api-contract-guard
+
+**Catch a breaking API change in review, not in production.** Diffs an old and a
+new API schema and reports what breaks existing clients — removed
+endpoints/types/fields, newly-required parameters/arguments, type changes,
+removed enum values — while noting additive changes as non-breaking. Auto-detects
+**OpenAPI/Swagger JSON** and **GraphQL SDL**.
+[Rules](plugins/api-contract-guard/skills/api-contract-guard/references/rules.md)
+
 ## Install
 
 In Claude Code:
@@ -80,11 +102,14 @@ In Claude Code:
 /plugin install dockerfile-doctor@claude-skills
 /plugin install env-doctor@claude-skills
 /plugin install regression-finder@claude-skills
+/plugin install actions-guard@claude-skills
+/plugin install api-contract-guard@claude-skills
 ```
 
 Then just ask Claude naturally — *"is this migration safe to deploy?"*, *"audit
 my AI code"*, *"why is my image so big?"*, *"is my .env in gitignore?"*, *"which
-commit broke this test?"* — and the matching skill activates automatically.
+commit broke this test?"*, *"is my CI workflow secure?"*, *"did I break the
+API?"* — and the matching skill activates automatically.
 
 ## Use the analyzers directly (no install required)
 

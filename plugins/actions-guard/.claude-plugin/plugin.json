@@ -1,0 +1,21 @@
+{
+  "name": "actions-guard",
+  "displayName": "Actions Guard",
+  "version": "1.0.0",
+  "description": "Security linter for GitHub Actions workflows: unpinned third-party actions, pull_request_target pwn requests, ${{ github.event.* }} script injection in run:, missing least-privilege permissions, secret interpolation, and hard-coded credentials.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "github-actions",
+    "ci",
+    "security",
+    "supply-chain",
+    "script-injection",
+    "pull-request-target",
+    "devsecops",
+    "workflow"
+  ]
+}
