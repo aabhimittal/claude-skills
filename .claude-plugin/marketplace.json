@@ -53,6 +53,34 @@
       "description": "Detects breaking API changes by diffing two schema versions (OpenAPI/Swagger JSON + GraphQL SDL): removed endpoints/types/fields, newly-required inputs, type changes, and removed enum values.",
       "version": "1.0.0",
       "keywords": ["api", "openapi", "graphql", "breaking-changes", "schema-diff"]
+    },
+    {
+      "name": "compose-guard",
+      "source": "./plugins/compose-guard",
+      "description": "Security linter for Docker Compose files: privileged containers, bind-mounted Docker socket, host network/PID/IPC namespaces, dangerous capabilities, disabled seccomp/AppArmor, :latest images, hard-coded secrets, sensitive host mounts, and datastore ports exposed on 0.0.0.0.",
+      "version": "1.0.0",
+      "keywords": ["docker", "docker-compose", "container", "security", "hardening"]
+    },
+    {
+      "name": "a11y-guard",
+      "source": "./plugins/a11y-guard",
+      "description": "Accessibility linter for HTML and JSX/TSX: missing alt text, unnamed icon-only controls, click handlers on non-interactive elements, unlabelled form fields, positive tabindex, aria-hidden on focusable elements, missing html lang, and zoom-blocking viewports.",
+      "version": "1.0.0",
+      "keywords": ["accessibility", "a11y", "wcag", "jsx", "react", "html"]
+    },
+    {
+      "name": "commit-lint",
+      "source": "./plugins/commit-lint",
+      "description": "Conventional Commits linter and changelog generator: validates commit headers, types, scopes, imperative subjects, and BREAKING CHANGE consistency, then generates a grouped Keep-a-Changelog-style release note from git history.",
+      "version": "1.0.0",
+      "keywords": ["conventional-commits", "changelog", "git", "release-notes", "git-hooks"]
+    },
+    {
+      "name": "flaky-test-hunter",
+      "source": "./plugins/flaky-test-hunter",
+      "description": "Finds non-deterministic tests by running a test command N times, ranking tests that both pass and fail by instability, and classifying likely root causes (timing, ordering, randomness, network, concurrency, resource) with targeted fixes.",
+      "version": "1.0.0",
+      "keywords": ["flaky-tests", "testing", "ci", "non-determinism", "reliability"]
     }
   ]
 }

@@ -1,0 +1,21 @@
+{
+  "name": "commit-lint",
+  "displayName": "Commit Lint",
+  "version": "1.0.0",
+  "description": "Conventional Commits linter and changelog generator: validates commit headers, types, scopes, imperative subjects, body formatting, and BREAKING CHANGE consistency — then generates a grouped, Keep-a-Changelog-style release note from git history.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "conventional-commits",
+    "commitlint",
+    "changelog",
+    "git",
+    "release-notes",
+    "semver",
+    "git-hooks",
+    "ci"
+  ]
+}

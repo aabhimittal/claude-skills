@@ -174,6 +174,82 @@ def main() -> int:
     parts.append("### The same tool on OpenAPI / Swagger (JSON)\n\n"
                  f"```console\n{out}\n```\n\n_Exit code: **{rc}**_\n\n---\n\n")
 
+    parts.append("## 🐙 compose-guard\n\n")
+    cg = skill("compose-guard") / "scripts" / "analyze_compose.py"
+    cg_ex = skill("compose-guard") / "examples"
+    rc, out = run([PY, str(cg), "docker-compose.unsafe.yml"], cg_ex)
+    parts.append(section(
+        "Harden a Docker Compose stack",
+        "Is my docker-compose file secure? Why is mounting docker.sock bad?",
+        "analyze_compose.py docker-compose.unsafe.yml",
+        rc, out))
+    rc, out = run([PY, str(cg), "docker-compose.safe.yml"], cg_ex)
+    parts.append("### The hardened stack passes\n\n"
+                 f"```console\n{out}\n```\n\n_Exit code: **{rc}**_\n\n---\n\n")
+
+    parts.append("## ♿ a11y-guard\n\n")
+    ag2 = skill("a11y-guard") / "scripts" / "analyze_a11y.py"
+    ag2_ex = skill("a11y-guard") / "examples"
+    rc, out = run([PY, str(ag2), "unsafe_widget.jsx"], ag2_ex)
+    parts.append(section(
+        "Find accessibility barriers in a React component",
+        "Is this component accessible? Check it for screen readers and keyboard users.",
+        "analyze_a11y.py unsafe_widget.jsx",
+        rc, out,
+        extra="It reads HTML too — `analyze_a11y.py unsafe_page.html` additionally "
+              "flags missing `alt` text, unlabelled inputs, a missing `<html lang>`, "
+              "a zoom-blocking viewport, and \"click here\" link text."))
+    rc, out = run([PY, str(ag2), "safe_widget.jsx", "safe_page.html"], ag2_ex)
+    parts.append("### The accessible rewrites pass\n\n"
+                 f"```console\n{out}\n```\n\n_Exit code: **{rc}**_\n\n"
+                 "> Automated checks catch only a subset of real barriers. Passing "
+                 "this linter is a floor, not a ceiling — colour contrast, focus "
+                 "order, and whether the `alt` text is *useful* still need a human "
+                 "(ideally screen-reader) pass.\n\n---\n\n")
+
+    parts.append("## 📝 commit-lint\n\n")
+    clp = skill("commit-lint") / "scripts" / "commit_lint.py"
+    rc, out = run([PY, str(clp), "lint", "-m", "Added new stuff."], REPO)
+    parts.append(section(
+        "Lint a commit message",
+        "Is this a valid conventional commit?",
+        'commit_lint.py lint -m "Added new stuff."',
+        rc, out))
+    rc, out = run([PY, str(clp), "lint", "-m", "feat(api): add cursor pagination"], REPO)
+    parts.append("### A conforming message passes\n\n"
+                 f"```console\n{out}\n```\n\n_Exit code: **{rc}**_\n\n"
+                 "Lint a whole PR with `--range origin/main..HEAD`, or wire it into a "
+                 "`commit-msg` hook (see `examples/commit-msg-hook.sh`).\n\n---\n\n")
+    rc, out = run([PY, str(clp), "changelog", "--range", "HEAD",
+                   "--version", "1.2.0", "--date", "2026-07-24"], REPO)
+    parts.append("### Generate a changelog from git history\n\n"
+                 "```bash\ncommit_lint.py changelog --range v1.1.0..HEAD "
+                 "--version 1.2.0 --date 2026-07-24\n```\n\n"
+                 "Run against this repository's own history, that produces:\n\n"
+                 f"```markdown\n{out.strip()}\n```\n\n"
+                 "Breaking changes are listed first, scopes are bolded, and commits "
+                 "that don't follow the convention land under **Other** rather than "
+                 "being dropped.\n\n---\n\n")
+
+    parts.append("## 🎲 flaky-test-hunter\n\n")
+    fth = skill("flaky-test-hunter") / "scripts" / "hunt_flaky.py"
+    fth_dir = skill("flaky-test-hunter")
+    rc, out = run([PY, str(fth), "-n", "12", "--quiet", "--cmd",
+                   f"{PY} examples/flaky_suite.py"], fth_dir)
+    parts.append(section(
+        "Hunt a flaky test",
+        "This test fails randomly in CI — which tests are actually flaky, and why?",
+        'hunt_flaky.py -n 12 --cmd "python3 examples/flaky_suite.py"',
+        rc, out,
+        footer="_Exit code: **1**_ — flaky tests were observed.",
+        extra="The bundled fixture is deliberately non-deterministic (a simulated "
+              "race, a timeout, and an unseeded-random assertion, plus one "
+              "*consistently* broken test). Note the tool separates the "
+              "consistently-failing test from the flaky ones — that one is broken, "
+              "not flaky — and reports a failure **rate** per test, because a single "
+              "run proves nothing about a flaky test. Exact rates vary per "
+              "invocation by nature."))
+
     # regression-finder live demo (normalized shas)
     parts.append("## 🔍 regression-finder\n\n")
     reg = skill("regression-finder") / "scripts" / "regression_finder.py"
@@ -211,6 +287,26 @@ def main() -> int:
         "analyze_env.py . --fail-on high\n"
         "    python3 plugins/actions-guard/skills/actions-guard/scripts/"
         "analyze_workflow.py . --fail-on high\n"
+        "    python3 plugins/compose-guard/skills/compose-guard/scripts/"
+        "analyze_compose.py . --fail-on high\n"
+        "    python3 plugins/a11y-guard/skills/a11y-guard/scripts/"
+        "analyze_a11y.py ./src --fail-on high\n"
+        "```\n\n"
+        "`commit-lint` gates the PR's own commits, and `flaky-test-hunter` is best "
+        "run on a schedule (or against the tests a PR touches) rather than on every "
+        "push:\n\n"
+        "```yaml\n"
+        "- name: Commit messages\n"
+        "  run: |\n"
+        "    python3 plugins/commit-lint/skills/commit-lint/scripts/commit_lint.py "
+        "lint \\\n"
+        "      --range origin/${{ github.base_ref }}..HEAD --fail-on high\n"
+        "\n"
+        "- name: Flaky test sweep (nightly)\n"
+        "  run: |\n"
+        "    python3 plugins/flaky-test-hunter/skills/flaky-test-hunter/scripts/"
+        "hunt_flaky.py \\\n"
+        "      -n 20 --cmd \"pytest -q\"\n"
         "```\n\n"
         "`api-contract-guard` takes the *old* and *new* schema as two arguments, "
         "so in CI diff the base branch against the PR:\n\n"

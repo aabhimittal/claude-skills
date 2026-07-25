@@ -1,0 +1,20 @@
+<!-- Example page with accessibility defects. -->
+<html>                                  <!-- A11Y008: no lang attribute -->
+<head>
+  <!-- A11Y012: no <title> -->
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <!-- A11Y009: blocks pinch-zoom -->
+</head>
+<body>
+  <img src="/hero.png">                 <!-- A11Y001: no alt text -->
+
+  <form>
+    <input type="text" name="q">        <!-- A11Y005: no associated label -->
+    <button><svg viewBox="0 0 1 1"></svg></button>  <!-- A11Y002: no accessible name -->
+  </form>
+
+  <span tabindex="3">Third</span>       <!-- A11Y004: positive tabindex -->
+  <a href="/pricing">click here</a>     <!-- A11Y011: uninformative link text -->
+  <video autoplay src="/promo.mp4"></video>  <!-- A11Y010: autoplay not muted -->
+</body>
+</html>

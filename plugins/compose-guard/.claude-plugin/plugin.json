@@ -1,0 +1,21 @@
+{
+  "name": "compose-guard",
+  "displayName": "Compose Guard",
+  "version": "1.0.0",
+  "description": "Security linter for Docker Compose files: privileged containers, bind-mounted Docker socket, host network/PID/IPC namespaces, dangerous capabilities, disabled seccomp/AppArmor, :latest images, hard-coded secrets, sensitive host mounts, and datastore ports exposed on 0.0.0.0.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "docker",
+    "docker-compose",
+    "container",
+    "security",
+    "hardening",
+    "devsecops",
+    "misconfiguration",
+    "ci"
+  ]
+}

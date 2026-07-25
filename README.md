@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/aabhimittal/claude-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/aabhimittal/claude-skills/actions/workflows/ci.yml)
 
-An open-source [Claude Code](https://code.claude.com) plugin marketplace — seven
+An open-source [Claude Code](https://code.claude.com) plugin marketplace — eleven
 focused, **dependency-free** developer skills. Each ships a deterministic Python
 analyzer (or driver) with a self-test and a CI-friendly exit code, so the
 guidance is enforced by code, not vibes.
@@ -21,6 +21,10 @@ captured terminal output on the bundled examples (what you get after installing)
 | 🔍 **regression-finder** | Drives a safe automated `git bisect run` to pinpoint the commit that introduced a regression. |
 | 🔐 **actions-guard** | Security-lints GitHub Actions workflows: unpinned actions, `pull_request_target` pwn requests, `run:` script injection, over-broad tokens. |
 | 🔁 **api-contract-guard** | Diffs two API schema versions (OpenAPI JSON + GraphQL SDL) and flags breaking changes for clients. |
+| 🐙 **compose-guard** | Lints Docker Compose for privileged containers, mounted `docker.sock`, host namespaces, baked secrets, exposed datastores. |
+| ♿ **a11y-guard** | Accessibility linter for HTML/JSX: missing alt text, unnamed icon buttons, `div onClick`, unlabelled inputs, focus traps. |
+| 📝 **commit-lint** | Conventional Commits linter **and** changelog generator from git history. |
+| 🎲 **flaky-test-hunter** | Runs tests N times, ranks non-deterministic tests, and classifies the root cause. |
 
 ---
 
@@ -91,6 +95,50 @@ removed enum values — while noting additive changes as non-breaking. Auto-dete
 **OpenAPI/Swagger JSON** and **GraphQL SDL**.
 [Rules](plugins/api-contract-guard/skills/api-contract-guard/references/rules.md)
 
+### 🐙 compose-guard
+
+**One line in a compose file can hand over your host.** Flags `privileged: true`,
+a bind-mounted `/var/run/docker.sock` (full daemon control → host takeover, and
+`:ro` doesn't help), host `network_mode`/`pid`/`ipc`, near-root capabilities like
+`SYS_ADMIN`, `seccomp:unconfined`, `:latest` images, secrets hard-coded in
+`environment:`, sensitive host bind mounts, and datastore ports published on
+`0.0.0.0`. Correctly ignores the *safe* `cap_drop: [ALL]` pattern.
+[Rules](plugins/compose-guard/skills/compose-guard/references/rules.md)
+
+### ♿ a11y-guard
+
+**Find the barriers that lock people out of your UI.** Catches images with no
+`alt`, icon-only buttons that announce as just "button", `<div onClick>` with no
+keyboard path, unlabelled form fields, positive `tabindex`, `aria-hidden` on
+focusable elements (ghost focus), missing `<html lang>`, zoom-blocking viewports,
+and "click here" links. Works on HTML, JSX/TSX, Vue and Svelte; each rule maps to
+a WCAG criterion and explains *who* it blocks. Automated checks are a floor, not
+a ceiling — the skill says so.
+[Rules + WCAG mappings](plugins/a11y-guard/skills/a11y-guard/references/rules.md)
+
+### 📝 commit-lint
+
+**Conventional Commits, enforced — plus the changelog for free.** Validates header
+format, type, scope, imperative lowercase subject, body wrapping, and
+`BREAKING CHANGE` consistency (merge/revert/fixup commits are exempt by design).
+Then `changelog` mode turns any revision range into a Keep-a-Changelog release
+note: breaking changes first, grouped by type, scopes bolded, non-conventional
+commits under **Other** so nothing silently disappears. Ships a ready-to-copy
+`commit-msg` hook.
+[Rules](plugins/commit-lint/skills/commit-lint/references/rules.md)
+
+### 🎲 flaky-test-hunter
+
+**A single green run proves nothing.** Runs your test command N times, ranks the
+tests that both passed *and* failed by instability (most unstable first, with the
+observed failure rate and which runs failed), and classifies the likely root
+cause from each test's own failure output — timing, ordering/shared state,
+randomness, network, concurrency, resource exhaustion, time-of-day, float
+precision — with the fix that removes the non-determinism rather than hiding it.
+Consistently-failing tests are reported separately (broken, not flaky), and it
+prints the statistical confidence of your run count.
+[Causes + fixes](plugins/flaky-test-hunter/skills/flaky-test-hunter/references/causes.md)
+
 ## Install
 
 In Claude Code:
@@ -104,12 +152,18 @@ In Claude Code:
 /plugin install regression-finder@claude-skills
 /plugin install actions-guard@claude-skills
 /plugin install api-contract-guard@claude-skills
+/plugin install compose-guard@claude-skills
+/plugin install a11y-guard@claude-skills
+/plugin install commit-lint@claude-skills
+/plugin install flaky-test-hunter@claude-skills
 ```
 
 Then just ask Claude naturally — *"is this migration safe to deploy?"*, *"audit
 my AI code"*, *"why is my image so big?"*, *"is my .env in gitignore?"*, *"which
 commit broke this test?"*, *"is my CI workflow secure?"*, *"did I break the
-API?"* — and the matching skill activates automatically.
+API?"*, *"why is mounting docker.sock bad?"*, *"is this component accessible?"*,
+*"generate a changelog"*, *"which tests are flaky?"* — and the matching skill
+activates automatically.
 
 ## Use the analyzers directly (no install required)
 
@@ -133,6 +187,19 @@ python3 plugins/env-doctor/skills/env-doctor/scripts/analyze_env.py .
 # regression-finder
 python3 plugins/regression-finder/skills/regression-finder/scripts/regression_finder.py \
   --good v1.2.0 --verify -- pytest -x tests/test_foo.py::test_bar
+
+# compose-guard
+python3 plugins/compose-guard/skills/compose-guard/scripts/analyze_compose.py docker-compose.yml
+
+# a11y-guard
+python3 plugins/a11y-guard/skills/a11y-guard/scripts/analyze_a11y.py ./src
+
+# commit-lint (lint a PR's commits, or generate a changelog)
+python3 plugins/commit-lint/skills/commit-lint/scripts/commit_lint.py lint --range origin/main..HEAD
+python3 plugins/commit-lint/skills/commit-lint/scripts/commit_lint.py changelog --range v1.1.0..HEAD
+
+# flaky-test-hunter
+python3 plugins/flaky-test-hunter/skills/flaky-test-hunter/scripts/hunt_flaky.py -n 20 --cmd "pytest -q"
 ```
 
 Each `*-doctor`/analyzer ships paired examples (unsafe vs. safe) under its

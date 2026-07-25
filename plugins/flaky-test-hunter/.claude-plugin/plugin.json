@@ -1,0 +1,22 @@
+{
+  "name": "flaky-test-hunter",
+  "displayName": "Flaky Test Hunter",
+  "version": "1.0.0",
+  "description": "Finds non-deterministic tests by running a test command N times, ranking tests that both pass and fail by instability, and classifying likely root causes (timing, ordering/shared state, randomness, network, concurrency, resource, time-of-day, float precision) with targeted fixes.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "flaky-tests",
+    "testing",
+    "ci",
+    "non-determinism",
+    "pytest",
+    "jest",
+    "go-test",
+    "debugging",
+    "reliability"
+  ]
+}

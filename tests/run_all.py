@@ -110,6 +110,10 @@ ANALYZERS = {
     "regression-finder": skill("regression-finder") / "scripts" / "regression_finder.py",
     "actions-guard": skill("actions-guard") / "scripts" / "analyze_workflow.py",
     "api-contract-guard": skill("api-contract-guard") / "scripts" / "analyze_contract.py",
+    "compose-guard": skill("compose-guard") / "scripts" / "analyze_compose.py",
+    "a11y-guard": skill("a11y-guard") / "scripts" / "analyze_a11y.py",
+    "commit-lint": skill("commit-lint") / "scripts" / "commit_lint.py",
+    "flaky-test-hunter": skill("flaky-test-hunter") / "scripts" / "hunt_flaky.py",
 }
 
 
@@ -197,6 +201,68 @@ def test_fixtures() -> None:
           f"api-contract-guard: OpenAPI rules include OAS001,003,004 ({sorted(_rules(data))})")
     rc, _ = run(acg, str(ex / "schema.old.graphql"), str(ex / "schema.old.graphql"))
     check(rc == 0, "api-contract-guard: identical schema exits 0")
+
+    # compose-guard
+    cg = ANALYZERS["compose-guard"]
+    ex = skill("compose-guard") / "examples"
+    rc, data = run_json(cg, str(ex / "docker-compose.unsafe.yml"))
+    check(rc == 1, "compose-guard: unsafe compose exits 1")
+    check({"CMP001", "CMP002", "CMP003", "CMP004", "CMP006"} <= _rules(data),
+          f"compose-guard: unsafe rules complete ({sorted(_rules(data))})")
+    rc, _ = run(cg, str(ex / "docker-compose.safe.yml"))
+    check(rc == 0, "compose-guard: safe compose exits 0")
+
+    # a11y-guard (HTML + JSX)
+    ag2 = ANALYZERS["a11y-guard"]
+    ex = skill("a11y-guard") / "examples"
+    rc, data = run_json(ag2, str(ex / "unsafe_page.html"))
+    check(rc == 1, "a11y-guard: inaccessible page exits 1")
+    check({"A11Y001", "A11Y005", "A11Y008", "A11Y012"} <= _rules(data),
+          f"a11y-guard: HTML rules complete ({sorted(_rules(data))})")
+    rc, data = run_json(ag2, str(ex / "unsafe_widget.jsx"))
+    check({"A11Y002", "A11Y003", "A11Y006", "A11Y007"} <= _rules(data),
+          f"a11y-guard: JSX rules complete ({sorted(_rules(data))})")
+    rc, _ = run(ag2, str(ex / "safe_page.html"), str(ex / "safe_widget.jsx"))
+    check(rc == 0, "a11y-guard: accessible examples exit 0")
+
+    # commit-lint (lint + changelog over real git history)
+    cl = ANALYZERS["commit-lint"]
+    rc, out = run(cl, "lint", "-m", "feat(api): add cursor pagination")
+    check(rc == 0, "commit-lint: valid conventional commit exits 0")
+    rc, data = run_json(cl, "lint", "-m", "Added new stuff.")
+    check(rc == 1, "commit-lint: malformed header exits 1")
+    check("CL002" in _rules(data), f"commit-lint: CL002 raised ({sorted(_rules(data))})")
+    rc, out = run(cl, "changelog", "--range", "HEAD", "--version", "9.9.9")
+    check(rc == 0 and "## 9.9.9" in out,
+          "commit-lint: changelog generated from real git history")
+    rc, out = run(cl, "lint", "-m", 'Merge pull request #42 from foo/bar')
+    check(rc == 0, "commit-lint: merge commits are exempt")
+
+    # flaky-test-hunter (against the deliberately flaky fixture).
+    # n=20 is chosen deliberately: the fixture's tests fail at 40%/25%/30%, so the
+    # chance that fewer than two of them reveal themselves (and this assertion
+    # fails by luck) is ~2.7e-6, vs ~1.4e-4 at n=14. The fixture runs in
+    # milliseconds, so the extra runs are free — and a probabilistic assertion in
+    # CI must not itself be flaky.
+    fth = ANALYZERS["flaky-test-hunter"]
+    fixture = skill("flaky-test-hunter") / "examples" / "flaky_suite.py"
+    rc, data = run_json(fth, "-n", "20", "--quiet", "--cmd",
+                        f"{sys.executable} {fixture}")
+    check(rc == 1, "flaky-test-hunter: detects flakiness in the fixture (exit 1)")
+    check(data.get("flaky_count", 0) >= 2,
+          f"flaky-test-hunter: found multiple flaky tests "
+          f"({data.get('flaky_count')})")
+    ids = {f["test_id"].split("::")[-1] for f in data.get("flaky", [])}
+    check("test_always_broken" not in ids,
+          "flaky-test-hunter: consistently-failing test is not called flaky")
+    check(any("test_always_broken" in t for t in data.get("consistently_failing", [])),
+          "flaky-test-hunter: consistently-failing test reported separately")
+    cats = {c["category"] for f in data.get("flaky", [])
+            for c in f.get("likely_causes", [])[:1]}
+    check(len(cats) >= 2,
+          f"flaky-test-hunter: distinct root causes classified ({sorted(cats)})")
+    rc, _ = run(fth, "-n", "1", "--cmd", "true")
+    check(rc == 2, "flaky-test-hunter: rejects -n 1 with a usage error")
 
 
 # --------------------------------------------------------------------------- #
