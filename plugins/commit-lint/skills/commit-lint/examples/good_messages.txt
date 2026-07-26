@@ -1,0 +1,6 @@
+feat(api): add cursor pagination
+fix: handle empty payload
+docs: clarify install steps
+chore(deps): bump urllib3 to 2.2.2
+refactor: extract HTTP client
+feat(api)!: drop v1 endpoints

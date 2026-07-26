@@ -1,0 +1,22 @@
+# Example Compose file with multiple security problems.
+services:
+  api:
+    image: mycompany/api:latest        # CMP005: mutable :latest tag
+    privileged: true                   # CMP001: disables container isolation
+    network_mode: host                 # CMP003: shares the host network namespace
+    cap_add:
+      - SYS_ADMIN                      # CMP004: near-root capability
+    security_opt:
+      - seccomp:unconfined             # CMP008: removes the syscall filter
+    environment:
+      DB_PASSWORD: sup3rs3cr3tvalue    # CMP006: credential committed to the repo
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # CMP002: container escape
+      - /etc:/host-etc                              # CMP007: sensitive host path rw
+
+  db:
+    image: postgres:16
+    ports:
+      - "5432:5432"                    # CMP009: Postgres exposed on 0.0.0.0
+    environment:
+      POSTGRES_PASSWORD: postgres123realvalue       # CMP006

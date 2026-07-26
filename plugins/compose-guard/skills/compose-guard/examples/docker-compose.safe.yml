@@ -1,0 +1,27 @@
+# The same stack, hardened. analyze_compose.py reports no findings.
+services:
+  api:
+    image: mycompany/api:1.8.3         # explicit, reproducible tag
+    # No privileged, no host namespaces, no docker.sock.
+    cap_drop:
+      - ALL                            # drop everything, add nothing back
+    read_only: true
+    environment:
+      # Supplied at deploy time; never committed.
+      DB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./config:/app/config:ro        # narrow, read-only mount
+    networks:
+      - backend
+
+  db:
+    image: postgres:16.2
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Not published to the host at all — only reachable on the internal network.
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

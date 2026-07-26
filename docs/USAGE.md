@@ -496,6 +496,292 @@ _Exit code: **1**_
 
 ---
 
+## 🐙 compose-guard
+
+### Harden a Docker Compose stack
+
+**Ask Claude:** _Is my docker-compose file secure? Why is mounting docker.sock bad?_
+
+The skill activates and runs:
+
+```bash
+analyze_compose.py docker-compose.unsafe.yml
+```
+
+Output:
+
+```console
+compose-guard found 10 issue(s): 2 critical, 6 high, 2 medium
+
+[CRITICAL] CMP001  Service runs privileged
+  at docker-compose.unsafe.yml:5  (service: api)
+  > privileged: true
+  why: `privileged: true` disables nearly all container isolation — the container gets access to host devices and can trivially escape to root on the host.
+  fix: Remove `privileged: true`. If a specific capability is genuinely needed, add only that one via `cap_add:` and keep the rest dropped.
+
+[CRITICAL] CMP002  Docker socket mounted into the container
+  at docker-compose.unsafe.yml:14  (service: volumes)
+  > - /var/run/docker.sock:/var/run/docker.sock
+  why: Mounting the Docker socket gives the container full control of the Docker daemon — it can start a privileged container and take over the host. 
+  fix: Don't mount the socket. If the container must orchestrate containers, use a scoped socket proxy that allow-lists only the endpoints it needs.
+
+[HIGH] CMP003  Host namespace shared (network_mode: host)
+  at docker-compose.unsafe.yml:6  (service: api)
+  > network_mode: host
+  why: `network_mode: host` removes the namespace boundary between the container and the host — host network interfaces, processes, or shared memory become directly reachable.
+  fix: Remove `network_mode: host` and use normal bridge networking / isolated namespaces; publish only the ports you need.
+
+[HIGH] CMP004  Dangerous capability added
+  at docker-compose.unsafe.yml:8  (service: cap_add)
+  > - SYS_ADMIN
+  why: `SYS_ADMIN` grants host-level power (e.g. SYS_ADMIN is close to root; ALL removes the capability boundary entirely).
+  fix: Drop it, or use the narrowest capability plus `cap_drop: [ALL]`.
+
+[HIGH] CMP008  Container sandboxing disabled via security_opt
+  at docker-compose.unsafe.yml:10  (service: security_opt)
+  > - seccomp:unconfined
+  why: Setting seccomp or AppArmor to `unconfined` removes the syscall / MAC filter that blocks most container-escape techniques.
+  fix: Remove the `unconfined` setting; if one syscall is blocked, ship a custom seccomp profile that allows just that syscall.
+
+[HIGH] CMP006  Secret hard-coded in the compose file
+  at docker-compose.unsafe.yml:12  (service: environment)
+  > DB_PASSWORD: ***
+  why: `DB_PASSWORD` has a literal value. Compose files are committed, so the credential is in version control and visible to anyone with repo access.
+  fix: Reference an environment variable (`${DB_PASSWORD}`) supplied at deploy time, or use Docker/orchestrator secrets; rotate the exposed value.
+
+[HIGH] CMP007  Sensitive host path bind-mounted (read-write)
+  at docker-compose.unsafe.yml:15  (service: volumes)
+  > - /etc:/host-etc
+  why: `/etc` is a sensitive host location. Mounting it read-write lets the container modify host state (and often escalate to host root).
+  fix: Mount only the specific subdirectory the service needs, and add `:ro` unless writes are genuinely required.
+
+[HIGH] CMP006  Secret hard-coded in the compose file
+  at docker-compose.unsafe.yml:22  (service: environment)
+  > POSTGRES_PASSWORD: ***
+  why: `POSTGRES_PASSWORD` has a literal value. Compose files are committed, so the credential is in version control and visible to anyone with repo access.
+  fix: Reference an environment variable (`${DB_PASSWORD}`) supplied at deploy time, or use Docker/orchestrator secrets; rotate the exposed value.
+
+[MEDIUM] CMP005  Image pinned to :latest
+  at docker-compose.unsafe.yml:4  (service: api)
+  > image: mycompany/api:latest
+  why: `mycompany/api:latest` uses the mutable `:latest` tag — deploys are not reproducible.
+  fix: Pin an explicit version tag or a digest.
+
+[MEDIUM] CMP009  PostgreSQL port published on all interfaces
+  at docker-compose.unsafe.yml:20  (service: ports)
+  > - "5432:5432"
+  why: Publishing `5432:5432` with no host IP binds to 0.0.0.0, exposing the datastore beyond the host (often to the public internet on a cloud VM).
+  fix: Don't publish it at all if only other compose services need it (use the internal network), or bind to loopback: `127.0.0.1:5432:5432`.
+
+FAIL: findings at or above 'high'.
+```
+
+_Exit code: **1**_ — non-zero because findings met the threshold, so this also fails a CI check.
+
+---
+
+### The hardened stack passes
+
+```console
+compose-guard: no issues detected. ✓
+```
+
+_Exit code: **0**_
+
+---
+
+## ♿ a11y-guard
+
+### Find accessibility barriers in a React component
+
+**Ask Claude:** _Is this component accessible? Check it for screen readers and keyboard users._
+
+The skill activates and runs:
+
+```bash
+analyze_a11y.py unsafe_widget.jsx
+```
+
+Output:
+
+```console
+a11y-guard found 4 issue(s): 3 high, 1 medium
+
+[HIGH] A11Y003  Click handler on non-interactive <div>
+  at unsafe_widget.jsx:6
+  > <div onClick={onSave}>
+  why: A click handler on a div/span is unreachable by keyboard and invisible to assistive tech: it can't be focused, activated with Enter/Space, or announced as a control. Missing: `role`, `tabIndex={0}`, a keyboard handler.
+  fix: Use a real `<button>` (best — you get focus, Enter/Space, and the right role for free). If you must keep the element, add `role="button"`, `tabIndex={0}`, and an Enter/Space key handler.
+
+[HIGH] A11Y002  <button> has no accessible name
+  at unsafe_widget.jsx:9
+  > <button onClick={onClose}>
+  why: An icon-only control with no text and no `aria-label` is announced as just "button" or "link", so its purpose is unknowable without sight.
+  fix: Add `aria-label="Close dialog"` (or visible text, or visually hidden text). If it wraps an icon, label the control, not the icon.
+
+[HIGH] A11Y006  aria-hidden on a focusable element
+  at unsafe_widget.jsx:15
+  > <button aria-hidden="true" onClick={onSave}>
+  why: The element is still keyboard-focusable but hidden from assistive tech, so a screen-reader user can focus something that announces nothing — a classic 'ghost focus' trap.
+  fix: Remove `aria-hidden`, or make the element unfocusable too (`tabindex="-1"` plus `disabled` where applicable).
+
+[MEDIUM] A11Y007  <a> without href
+  at unsafe_widget.jsx:12
+  > <a onClick={goHome}>
+  why: An anchor with no `href` is not focusable or activatable by keyboard and is not announced as a link or a button.
+  fix: If it navigates, give it a real `href`. If it performs an action, use `<button>` instead.
+
+FAIL: findings at or above 'high'.
+```
+
+_Exit code: **1**_ — non-zero because findings met the threshold, so this also fails a CI check.
+
+It reads HTML too — `analyze_a11y.py unsafe_page.html` additionally flags missing `alt` text, unlabelled inputs, a missing `<html lang>`, a zoom-blocking viewport, and "click here" link text.
+
+---
+
+### The accessible rewrites pass
+
+```console
+a11y-guard: no accessibility issues detected. ✓
+```
+
+_Exit code: **0**_
+
+> Automated checks catch only a subset of real barriers. Passing this linter is a floor, not a ceiling — colour contrast, focus order, and whether the `alt` text is *useful* still need a human (ideally screen-reader) pass.
+
+---
+
+## 📝 commit-lint
+
+### Lint a commit message
+
+**Ask Claude:** _Is this a valid conventional commit?_
+
+The skill activates and runs:
+
+```bash
+commit_lint.py lint -m "Added new stuff."
+```
+
+Output:
+
+```console
+commit-lint found 1 issue(s) in 1 commit(s): 1 high
+
+[HIGH] CL002  Header does not follow Conventional Commits
+  at 'Added new stuff.'
+  why: `Added new stuff.` doesn't match `type(scope)!: subject`.
+  fix: Add a type prefix and colon: `feat: Added new stuff` (or fix/docs/chore/…). Lowercase the subject and use the imperative mood.
+
+FAIL: findings at or above 'high'.
+```
+
+_Exit code: **1**_ — non-zero because findings met the threshold, so this also fails a CI check.
+
+---
+
+### A conforming message passes
+
+```console
+commit-lint: 1 commit(s) checked, all conform. ✓
+```
+
+_Exit code: **0**_
+
+Lint a whole PR with `--range origin/main..HEAD`, or wire it into a `commit-msg` hook (see `examples/commit-msg-hook.sh`).
+
+---
+
+### Generate a changelog from git history
+
+```bash
+commit_lint.py changelog --range v1.1.0..HEAD --version 1.2.0 --date 2026-07-24
+```
+
+Run against this repository's own history, that produces:
+
+```markdown
+## 1.2.0 — 2026-07-24
+
+### Other
+
+- Add actions-guard and api-contract-guard; ignore __pycache__ (8b748791684b)
+- Add docs/USAGE.md and generator (follow-up to #2) (#3) (1fabee99cb43)
+- Add CI status badge to README (3f57d6dd8139)
+- Add CI workflow and end-to-end test harness (0d121d9d7fda)
+- Add dockerfile-doctor, env-doctor, regression-finder (276417947b22)
+- Add llm-app-doctor: static auditor for AI/LLM integration code (060d3ae4f6cd)
+- Add migration-guard: database migration safety analyzer skill (2275673324f8)
+- Initial commit (80d8eaf01169)
+```
+
+Breaking changes are listed first, scopes are bolded, and commits that don't follow the convention land under **Other** rather than being dropped.
+
+---
+
+## 🎲 flaky-test-hunter
+
+### Hunt a flaky test
+
+**Ask Claude:** _This test fails randomly in CI — which tests are actually flaky, and why?_
+
+The skill activates and runs:
+
+```bash
+hunt_flaky.py -n 12 --cmd "python3 examples/flaky_suite.py"
+```
+
+Output:
+
+```console
+flaky-test-hunter: 12 run(s), 12 with a non-zero exit code
+
+  run   1  FAIL  3 passed, 2 failed  (0.0s)
+  run   2  FAIL  3 passed, 2 failed  (0.0s)
+  run   3  FAIL  4 passed, 1 failed  (0.0s)
+  run   4  FAIL  4 passed, 1 failed  (0.0s)
+  run   5  FAIL  3 passed, 2 failed  (0.0s)
+  run   6  FAIL  2 passed, 3 failed  (0.0s)
+  run   7  FAIL  4 passed, 1 failed  (0.0s)
+  run   8  FAIL  4 passed, 1 failed  (0.0s)
+  run   9  FAIL  3 passed, 2 failed  (0.0s)
+  run  10  FAIL  3 passed, 2 failed  (0.0s)
+  run  11  FAIL  3 passed, 2 failed  (0.0s)
+  run  12  FAIL  3 passed, 2 failed  (0.0s)
+
+FLAKY — passed in some runs and failed in others (3 test(s), most unstable first):
+
+  examples/flaky_suite.py::test_timeout_prone
+    failed 4/12 runs (33%)  — runs [5, 6, 9, 11]
+    likely cause: timing — Test depends on wall-clock timing or a fixed sleep
+      signals: timed out
+      fix: Replace sleeps with explicit waits on the condition itself (poll with a deadline, or await a real signal/event). Never assert on elapsed time; inject a fake clock instead of sleeping.
+
+  examples/flaky_suite.py::test_race_condition
+    failed 3/12 runs (25%)  — runs [1, 2, 12]
+    likely cause: concurrency — Race condition between concurrent operations
+      signals: concurrent, data race, lock, thread
+      fix: Add proper synchronization, or make the test deterministic by serializing the interleaving under test. Run with a race detector (`go test -race`, thread sanitizer) to find the real ordering bug.
+
+  examples/flaky_suite.py::test_unseeded_random
+    failed 2/12 runs (17%)  — runs [6, 10]
+    likely cause: randomness — Unseeded randomness makes the assertion non-deterministic
+      signals: random, seed, uuid
+      fix: Seed the RNG to a fixed value in test setup, or assert on invariants (shape, membership, count) rather than exact random values.
+
+CONSISTENTLY FAILING (1) — broken, not flaky:
+  examples/flaky_suite.py::test_always_broken  (failed 12/12)
+
+FAIL: flaky tests observed.
+```
+
+_Exit code: **1**_ — flaky tests were observed.
+
+The bundled fixture is deliberately non-deterministic (a simulated race, a timeout, and an unseeded-random assertion, plus one *consistently* broken test). Note the tool separates the consistently-failing test from the flaky ones — that one is broken, not flaky — and reports a failure **rate** per test, because a single run proves nothing about a flaky test. Exact rates vary per invocation by nature.
+
+---
+
 ## 🔍 regression-finder
 
 ### Find the commit that broke a test
@@ -530,7 +816,7 @@ running 'sh' '-c' 'python3 -B test_calc.py'
 0a1b2c3 is the first bad commit
 commit 0a1b2c3
 Author: dev <dev@example.com>
-Date:   Thu Jul 23 17:26:14 2026 +0000
+Date:   Sat Jul 25 04:23:22 2026 +0000
 
     refactor add (introduces bug)
 
@@ -550,7 +836,7 @@ AssertionError
 
 ============================================================
 CULPRIT — first commit where the command fails:
-  0a1b2c3  dev  2026-07-23
+  0a1b2c3  dev  2026-07-25
   refactor add (introduces bug)
 
 Files changed:
@@ -579,6 +865,22 @@ Each analyzer exits non-zero when a finding meets `--fail-on`, so they drop stra
     python3 plugins/dockerfile-doctor/skills/dockerfile-doctor/scripts/analyze_dockerfile.py Dockerfile --fail-on high
     python3 plugins/env-doctor/skills/env-doctor/scripts/analyze_env.py . --fail-on high
     python3 plugins/actions-guard/skills/actions-guard/scripts/analyze_workflow.py . --fail-on high
+    python3 plugins/compose-guard/skills/compose-guard/scripts/analyze_compose.py . --fail-on high
+    python3 plugins/a11y-guard/skills/a11y-guard/scripts/analyze_a11y.py ./src --fail-on high
+```
+
+`commit-lint` gates the PR's own commits, and `flaky-test-hunter` is best run on a schedule (or against the tests a PR touches) rather than on every push:
+
+```yaml
+- name: Commit messages
+  run: |
+    python3 plugins/commit-lint/skills/commit-lint/scripts/commit_lint.py lint \
+      --range origin/${{ github.base_ref }}..HEAD --fail-on high
+
+- name: Flaky test sweep (nightly)
+  run: |
+    python3 plugins/flaky-test-hunter/skills/flaky-test-hunter/scripts/hunt_flaky.py \
+      -n 20 --cmd "pytest -q"
 ```
 
 `api-contract-guard` takes the *old* and *new* schema as two arguments, so in CI diff the base branch against the PR:

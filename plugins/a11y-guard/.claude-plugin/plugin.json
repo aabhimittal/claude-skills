@@ -1,0 +1,22 @@
+{
+  "name": "a11y-guard",
+  "displayName": "A11y Guard",
+  "version": "1.0.0",
+  "description": "Accessibility linter for HTML and JSX/TSX markup: missing alt text, unnamed icon-only controls, click handlers on non-interactive elements, unlabelled form fields, positive tabindex, aria-hidden on focusable elements, missing html lang, zoom-blocking viewports, and uninformative link text.",
+  "author": {
+    "name": "Abhishek Mittal"
+  },
+  "repository": "https://github.com/aabhimittal/claude-skills",
+  "license": "MIT",
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "wcag",
+    "jsx",
+    "react",
+    "html",
+    "screen-reader",
+    "keyboard-navigation",
+    "ci"
+  ]
+}

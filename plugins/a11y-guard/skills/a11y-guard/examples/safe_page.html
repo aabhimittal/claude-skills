@@ -1,0 +1,20 @@
+<!-- The same page, accessible. analyze_a11y.py reports no findings. -->
+<html lang="en">
+<head>
+  <title>Pricing — Acme</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <img src="/hero.png" alt="Team collaborating at a whiteboard">
+
+  <form>
+    <label for="q">Search products</label>
+    <input id="q" type="text" name="q">
+    <button aria-label="Submit search"><svg viewBox="0 0 1 1"></svg></button>
+  </form>
+
+  <span tabindex="0">Focusable in natural order</span>
+  <a href="/pricing">View the pricing page</a>
+  <video autoplay muted controls src="/promo.mp4"></video>
+</body>
+</html>
